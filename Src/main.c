@@ -50,6 +50,9 @@
 #include "main.h"
 #include "stm32l0xx_hal.h"
 #include "cmsis_os.h"
+#include "stdbool.h"
+#include "string.h"
+#include "stdlib.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -485,15 +488,17 @@ void Thread1(void const * argument)
 void Thread2(void const * argument)
 {
   /* USER CODE BEGIN Thread2 */
-	uint8_t txData[30] = "Hello from ISR Handler\r\n";
-	char buffer[4];
+	//uint8_t txData[30] = "Hello from ISR Handler\r\n";
+	char buffer[24];
+	char msg[55];
+	xSemaphoreTake(myBinarySem01Handle, portMAX_DELAY);
   /* Infinite loop */
   for(;;)
   {
-	  HAL_UART_Receive_IT(&huart2, (uint8_t*)buffer, 4);
+	  HAL_UART_Receive_IT(&huart2, (uint8_t*)buffer, 24);
+	  sprintf(msg, "This is what you wrote: %s\r\n", buffer);
+	  HAL_UART_Transmit(&huart2, (uint8_t*)msg, strlen(msg), HAL_MAX_DELAY);
 	  xSemaphoreTake(myBinarySem01Handle, HAL_MAX_DELAY);
-	  HAL_UART_Transmit(&huart2, txData, 30, 5);
-	  osDelay(1);
   }
   /* USER CODE END Thread2 */
 }
@@ -519,11 +524,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE END Callback 1 */
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
 	uint8_t txData[20] = "UART Callback\r\n";
 	HAL_UART_Transmit(&huart2, txData, 20, 5);
 	xSemaphoreGiveFromISR(myBinarySem01Handle,NULL);
-
 }
 
 /**
